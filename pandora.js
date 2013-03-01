@@ -15,7 +15,7 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
         "open": function(url,timeout) {
             return loadScript(url,timeout);
         },
-        "ajax": ajax,
+        "ajax": Ajax,
         "on": function(el,ev){
             var self = this;
             if(!el.on) el.on = {};
@@ -44,23 +44,6 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
         }
     };
 
-    function ajax(method,url,options,data){
-        options = options ? options : {};
-        data = data ? data : null;
-
-        options.method = method;
-        options.url = url;
-
-        return Ajax(options,data);
-    }
-
-    ['head','get','put','post','delete','patch','trace','connect','options']
-        .forEach(function(method) {
-            ajax[method] = function(url,options,data) {
-                return ajax(method,url,options,data);
-            }
-        });
-
 
     function addEventListener(elm, eType, fn){
         if(elm.addEventListener){
@@ -77,22 +60,6 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
             elm.detachEvent('on' + eType, fn);
         }
     }   
-
-    // clones and augments an object 
-    function cloneObject(object,augment) {
-
-        if(!augment) augment = {};
-
-        function Factory(properties) {
-            for(var x in properties) {
-                this[x] = properties[x];
-            }
-        }
-
-        Factory.prototype = object;
-
-        return new Factory(augment);
-    }
 
     /* FIXME: normalize the cached path */
     function loadScript(file,timeout) {
@@ -144,13 +111,16 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
         return loaded;
     }
 
-    function Ajax(options,data) {
+
+    function Ajax(method,url,options,data) {
         var res = new Promise(),
-        xhr = new XMLHttpRequest;
+            xhr = new XMLHttpRequest;
+
+        options = options ? options : {};
+        data = data ? data : null;
 
         if(typeof options !== 'object') options = {url:options};
         if(!options.async) options.async = true;
-        if(!options.method) options.method = "get";
         if(!options.timeout) options.timeout = 5000;
         if(!options.headers) options.headers = {};
         if(!options.headers.accept) options.headers.accept = "application/json";
@@ -185,7 +155,7 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
             }
         }
 
-        xhr.open(options.method,options.url,options.async);
+        xhr.open(method,url,options.async);
 
         /* set request headers */
         Object.keys(options.headers).forEach(function(header) {
@@ -200,6 +170,14 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
 
         return res;
     }
+
+    ['head','get','put','post','delete','patch','trace','connect','options']
+        .forEach(function(method) {
+            Ajax[method] = function(url,options,data) {
+                return Ajax(method,url,options,data);
+            }
+        });
+    
 
     // opens Pandoras box
     Pandora.on(window,'load')
