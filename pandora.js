@@ -54,40 +54,13 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
         return Ajax(options,data);
     }
 
+    ['head','get','put','post','delete','patch','trace','connect','options']
+        .forEach(function(method) {
+            ajax[method] = function(url,options,data) {
+                return ajax(method,url,options,data);
+            }
+        });
 
-    var ajaxMethods = {
-        "head": function(url,options){
-            return ajax('head',url,options);
-        },
-        "get": function(url,options){
-            return ajax('get',url,options);
-        },
-        "put": function(url,options,data){
-            return ajax('put',url,options,data);
-        },
-        "post": function(url,options,data){
-            return ajax('post',url,options,data);
-        },
-        "delete": function(url,options){
-            return ajax('delete',url,options);
-        },
-        "patch": function(url,options,data){
-            return ajax('patch',url,options,data);
-        },
-        "trace": function(url,options){
-            return ajax('trace',url,options);
-        },
-        "connect": function(url,options){
-            return ajax('connect',url,options);
-        },
-        "options": function(url,options){
-            return ajax('options',url,options);
-        }
-    };  
-
-    Object.keys(ajaxMethods).forEach(function(a){
-        ajax[a] = ajaxMethods[a];
-    });
 
     function addEventListener(elm, eType, fn){
         if(elm.addEventListener){
