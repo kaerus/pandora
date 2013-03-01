@@ -1,4 +1,4 @@
 pandora
 =======
 
-A box of Javascript
+A box of Javascript code

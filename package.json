@@ -1,0 +1,33 @@
+{
+  "name": "pandora",
+  "description": "A box of Javascript",
+  "version": "0.0.1",
+  "author": "Anders Elo <anders@kaerus.com> (http://kaerus.com)",
+  "contributors": ["Anders Elo <anders@kaerus.com> (http://kaerus.com)"],
+  "repository": "git://github.com/kaerus/pandora",
+  "main": "index",
+  "keywords": [
+    "pandora",
+    "framework"
+  ],
+  "engines": {
+    "node": ">=0.8.0"
+  },
+  "dependencies": {
+    "emitterjs":"git://github.com/kaerus/emitter.js",
+    "promisejs":"git://github.com/kaerus/promise.js"    
+  },
+  "devDependencies": {
+    "webmake":">=0.3.14",
+    "uglify-js":">=2.2.3"
+  },
+  "scripts": {
+    "test": "make test && make unit"
+  },
+  "licenses": [
+    {
+      "type": "APACHE2_0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ]
+}
