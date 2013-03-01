@@ -5,93 +5,91 @@ var root;
 try{root = global} catch(e){try {root = window} catch(e){root = this}};
 
 (function(){
+    var Promise = require('promisejs'),
+    Emitter = require('emitterjs'),
+    cached = {};
 
-	var Promise = require('promisejs'),
-		Emitter = require('emitterjs'),
-		cached = {};
+    Emitter(Promise.prototype);
 
-	Emitter(Promise.prototype);
-	
-	var Pandora = {
-		"open": function(url,timeout) {
-			return loadScript(url,timeout);
-		},
-		"ajax": ajax,
-		"on": function(el,ev){
-			var self = this;
-			if(!el.on) el.on = {};
-			if(!el.on[ev]) {
-				el.on[ev] = new Promise;
-				
-				function on(event) {
-					event = event ? event : window.event;
-					el.on[ev].attach(on).fulfill(event);
-					el.on[ev] = undefined;
-				}
+    var Pandora = {
+        "open": function(url,timeout) {
+            return loadScript(url,timeout);
+        },
+        "ajax": ajax,
+        "on": function(el,ev){
+            var self = this;
+            if(!el.on) el.on = {};
+            if(!el.on[ev]) {
+                el.on[ev] = new Promise;
 
-				try {
-					addEventListener(el, ev, on); 
-				} catch (error) {
-					el.on[ev].reject(error);
-					el.on[ev] = undefined;
-				}	
-			}
+                function on(event) {
+                    event = event ? event : window.event;
+                    el.on[ev].attach(on).fulfill(event);
+                    el.on[ev] = undefined;
+                }
 
-			return el.on[ev];
-		},
-		"off": function(el,ev){
-			if(el.on && el.on[ev])
-				removeEventListener(el, ev, el.on[ev].attached);
-			return this;
-		}
-	};
+                try {
+                    addEventListener(el, ev, on); 
+                } catch (error) {
+                    el.on[ev].reject(error);
+                    el.on[ev] = undefined;
+                }   
+            }
+            return el.on[ev];
+        },
+        "off": function(el,ev){
+            if(el.on && el.on[ev])
+                removeEventListener(el, ev, el.on[ev].attached);
+            return this;
+        }
+    };
 
-	function ajax(method,url,options,data){
-		options = options ? options : {};
-	    data = data ? data : null;
+    function ajax(method,url,options,data){
+        options = options ? options : {};
+        data = data ? data : null;
 
-		options.method = method;
-		options.url = url;
+        options.method = method;
+        options.url = url;
 
-		return Ajax(options,data);
-	}
+        return Ajax(options,data);
+    }
 
 
-	var ajaxMethods = {
-		"head": function(url,options){
-			return ajax('head',url,options);
-		},
-		"get": function(url,options){
-			return ajax('get',url,options);
-		},
-		"put": function(url,options,data){
-			return ajax('put',url,options,data);
-		},
-		"post": function(url,options,data){
-			return ajax('post',url,options,data);
-		},
-		"delete": function(url,options){
-			return ajax('delete',url,options);
-		},
-		"patch": function(url,options,data){
-			return ajax('patch',url,options,data);
-		},
-		"trace": function(url,options){
-			return ajax('trace',url,options);
-		},
-		"connect": function(url,options){
-			return ajax('connect',url,options);
-		},
-		"options": function(url,options){
-			return ajax('options',url,options);
-		}
-	};	
+    var ajaxMethods = {
+        "head": function(url,options){
+            return ajax('head',url,options);
+        },
+        "get": function(url,options){
+            return ajax('get',url,options);
+        },
+        "put": function(url,options,data){
+            return ajax('put',url,options,data);
+        },
+        "post": function(url,options,data){
+            return ajax('post',url,options,data);
+        },
+        "delete": function(url,options){
+            return ajax('delete',url,options);
+        },
+        "patch": function(url,options,data){
+            return ajax('patch',url,options,data);
+        },
+        "trace": function(url,options){
+            return ajax('trace',url,options);
+        },
+        "connect": function(url,options){
+            return ajax('connect',url,options);
+        },
+        "options": function(url,options){
+            return ajax('options',url,options);
+        }
+    };  
 
-	Object.keys(ajaxMethods).forEach(function(a){
-		ajax[a] = ajaxMethods[a];
-	});
+    Object.keys(ajaxMethods).forEach(function(a){
+        ajax[a] = ajaxMethods[a];
+    });
 
-	function addEventListener(elm, eType, fn){
+    function addEventListener(elm, eType, fn){
         if(elm.addEventListener){
             elm.addEventListener(eType, fn, false);
         } else if (elm.attachEvent){
@@ -107,161 +105,162 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
         }
     }   
 
-	// clones and augments an object 
-	function cloneObject(object,augment) {
-	   
-	   if(!augment) augment = {};
+    // clones and augments an object 
+    function cloneObject(object,augment) {
 
-	   function Factory(properties) {
-	       for(var x in properties) {
-	           this[x] = properties[x];
-	       }
-	    }
+        if(!augment) augment = {};
 
-	    Factory.prototype = object;
+        function Factory(properties) {
+            for(var x in properties) {
+                this[x] = properties[x];
+            }
+        }
 
-	    return new Factory(augment);
-	}
+        Factory.prototype = object;
 
-	/* FIXME: normalize the cached path */
-	function loadScript(file,timeout) {
-		var loaded = cached[file];
+        return new Factory(augment);
+    }
 
-		if(loaded) return loaded;
+    /* FIXME: normalize the cached path */
+    function loadScript(file,timeout) {
+        var loaded = cached[file];
 
-		loaded = cached[file] = new Promise();
+        if(loaded) return loaded;
 
-		if(timeout) loaded.timeout(timeout);
+        loaded = cached[file] = new Promise();
 
-	    var head = document.getElementsByTagName("head")[0];
-	    var script = document.createElement("script");
-	    
-	    /* forces cache reload */
-	    script.src = file+'?'+Date.now();
-	    script.async = true;
-	    script.defer = true;
+        if(timeout) loaded.timeout(timeout);
 
-	    function onloaded(event) {
-	    	if(!event) event = window.event;
-	    	loaded.attach(file).fulfill(event);
-	    }
+        var head = document.getElementsByTagName("head")[0];
+        var script = document.createElement("script");
 
-	    function onerror(event) {
-	    	if(!event) event = window.event;
-	    	loaded.attach(file).reject(event);
-	    }
+        /* forces cache reload */
+        script.src = file+'?'+Date.now();
+        script.async = true;
+        script.defer = true;
 
-	    if(script.readyState) {
-	    	/* IE & Opera */
-	        script.onreadystatechange = function(event) {
-	        	/* FIXME: IE on 404 error hell */
-	            if(this.readyState === "loaded" || 
-	                this.readyState === "complete") {
-	                this.onreadystatechange = null;
-	            	onloaded(event);
-	            } else {
-	            	onerror(event);
-	            }	
-	        }
-	    } else {
-	    	script.onload = onloaded;
-	    	script.onerror = onerror;
-	    }	
+        function onloaded(event) {
+            if(!event) event = window.event;
+            loaded.attach(file).fulfill(event);
+        }
 
-	    head.appendChild(script);
+        function onerror(event) {
+            if(!event) event = window.event;
+            loaded.attach(file).reject(event);
+        }
 
-	    return loaded;
-	}
+        if(script.readyState) {
+            /* IE & Opera */
+            script.onreadystatechange = function(event) {
+                /* FIXME: IE on 404 error hell */
+                if(this.readyState === "loaded" || 
+                    this.readyState === "complete") {
+                    this.onreadystatechange = null;
+                    onloaded(event);
+                } else {
+                    onerror(event);
+                }   
+            }
+        } else {
+            script.onload = onloaded;
+            script.onerror = onerror;
+        }   
 
-	function Ajax(options,data) {
-	    var res = new Promise(),
-	        xhr = new XMLHttpRequest;
+        head.appendChild(script);
 
-	    if(typeof options !== 'object') options = {url:options};
-	    if(!options.async) options.async = true;
-	    if(!options.method) options.method = "get";
-	    if(!options.timeout) options.timeout = 5000;
-	    if(!options.headers) options.headers = {};
-	    if(!options.headers.accept) options.headers.accept = "application/json";
+        return loaded;
+    }
 
-	    res.attach(xhr);
+    function Ajax(options,data) {
+        var res = new Promise(),
+        xhr = new XMLHttpRequest;
 
-	    function parseHeaders(h) {
-	    	var ret = {}, key, val, i;
+        if(typeof options !== 'object') options = {url:options};
+        if(!options.async) options.async = true;
+        if(!options.method) options.method = "get";
+        if(!options.timeout) options.timeout = 5000;
+        if(!options.headers) options.headers = {};
+        if(!options.headers.accept) options.headers.accept = "application/json";
+
+        res.attach(xhr);
+
+        function parseHeaders(h) {
+            var ret = {}, key, val, i;
 
 
-	    	h.split('\n').forEach(function(header) {
-	        	if((i=header.indexOf(':')) > 0) {
-	        		key = header.slice(0,i).replace(/^[\s]+|[\s]+$/g,'').toLowerCase();
-	        		val = header.slice(i+1,header.length).replace(/^[\s]+|[\s]+$/g,'');
-	        		if(key && key.length) ret[key] = val;
-	        	}	
-	    	});
+            h.split('\n').forEach(function(header) {
+                if((i=header.indexOf(':')) > 0) {
+                    key = header.slice(0,i).replace(/^[\s]+|[\s]+$/g,'').toLowerCase();
+                    val = header.slice(i+1,header.length).replace(/^[\s]+|[\s]+$/g,'');
+                    if(key && key.length) ret[key] = val;
+                }   
+            });
 
-	    	return ret;
-		}
+            return ret;
+        }
 
-	    xhr.onreadystatechange = function() {
-	        if(xhr.readyState === 4 && xhr.status) {
-	            var msg = xhr.responseText;
-	    		xhr.headers = parseHeaders(xhr.getAllResponseHeaders());
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4 && xhr.status) {
+                var msg = xhr.responseText;
+                xhr.headers = parseHeaders(xhr.getAllResponseHeaders());
 
-	    		if(options.headers.accept.indexOf('json') >= 0)
-	            	try { msg = JSON.parse(msg) } catch(err) {}
+                if(options.headers.accept.indexOf('json') >= 0)
+                    try { msg = JSON.parse(msg) } catch(err) {}
 
-	        	if(xhr.status < 400) res.fulfill(msg);
-	        	else res.reject(msg);     
-	        }
-	    }
+                if(xhr.status < 400) res.fulfill(msg);
+                else res.reject(msg);     
+            }
+        }
 
-	    xhr.open(options.method,options.url,options.async);
-	    
-	    /* set request headers */
-	    Object.keys(options.headers).forEach(function(header) {
-	        xhr.setRequestHeader(header,options.headers[header]);
-	    });
+        xhr.open(options.method,options.url,options.async);
 
-	    /* send request */
-	    xhr.send(data);
+        /* set request headers */
+        Object.keys(options.headers).forEach(function(header) {
+            xhr.setRequestHeader(header,options.headers[header]);
+        });
 
-	    /* set a timeout */
-	    res.timeout(options.timeout);
+        /* request data */
+        xhr.send(data);
 
-	    return res;
-	}
+        /* response timeout */
+        res.timeout(options.timeout);
 
-	// opens Pandoras box
-	Pandora.on(window,'load')
-		.then(function(event){
-			if(window.onready) { 
-				window.onready.call(event,Pandora);
-			} else {
-				var main, script = document.getElementsByTagName('script');
+        return res;
+    }
 
-				for(var i = 0; i < script.length; i++) {
-					if((main = script[i].getAttribute('data-main'))){
-						Pandora.open(main,OPEN_TIMEOUT).then(function(){
-							console.log("Loaded", main);
-						},function(error){
-							console.log("Error loading %s:", main, error);
-						});
-						
-						var base = dataMain.split('/');
-                    	Pandora.main = base.pop();
-                    	Pandora.base = base.join('/');
+    // opens Pandoras box
+    Pandora.on(window,'load')
+        .then(function(event) {
+            if(window.onready) { 
+                window.onready.call(event,Pandora);
+            } else {
+                var main, script = document.getElementsByTagName('script');
 
-						break;
-					}
-				}
-			}
-			this.emit('ready',event);
-		},function(error){
-			this.emit('error',error);
-		});
+                for(var i = 0; i < script.length; i++) {
+                    if((main = script[i].getAttribute('data-main'))){
+                        Pandora.open(main,OPEN_TIMEOUT).then(function(){
+                            console.log("Loaded", main);
+                        },function(error){
+                            console.log("Error loading %s:", main, error);
+                            /* TODO: handle errors */
+                        });
 
-	/* FIXME: should not be necessary. */
-	/* Instead pass Pandora to main(). */
-	if (typeof exports === 'object') {  
+                        var base = dataMain.split('/');
+                        Pandora.main = base.pop();
+                        Pandora.base = base.join('/');
+
+                        break;
+                    }
+                }
+            }
+            this.emit('ready',event);
+        },function(error){
+            this.emit('error',error);
+        });
+
+    /* FIXME: should not be necessary. */
+    /* Instead pass Pandora to main(). */
+    if (typeof exports === 'object') {  
         if (typeof module !== undefined && module.exports) {
             exports = module.exports = Pandora;
         } else exports.Pandora = Pandora;
