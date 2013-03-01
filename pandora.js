@@ -196,7 +196,7 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
                             /* TODO: handle errors */
                         });
 
-                        var base = dataMain.split('/');
+                        var base = main.split('/');
                         Pandora.main = base.pop();
                         Pandora.base = base.join('/');
 
