@@ -12,38 +12,37 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
     Emitter(Promise.prototype);
 
     var Pandora = {
-        "open": function(url,timeout) {
-            return loadScript(url,timeout);
-        },
         "ajax": Ajax,
-        "on": function(el,ev){
-            var self = this;
-            if(!el.on) el.on = {};
-            if(!el.on[ev]) {
-                el.on[ev] = new Promise;
-
-                function on(event) {
-                    event = event ? event : window.event;
-                    el.on[ev].attach(on).fulfill(event);
-                    el.on[ev] = undefined;
-                }
-
-                try {
-                    addEventListener(el, ev, on); 
-                } catch (error) {
-                    el.on[ev].reject(error);
-                    el.on[ev] = undefined;
-                }   
-            }
-            return el.on[ev];
-        },
-        "off": function(el,ev){
-            if(el.on && el.on[ev])
-                removeEventListener(el, ev, el.on[ev].attached);
-            return this;
-        }
+        "open": Script, 
+        "on": addEvent,
+        "off": removeEvent
     };
 
+    function addEvent(el,ev,fn){
+
+        if(!el._event) el._event = new Emitter;
+        
+        el._event.on(ev,fn);
+
+        function on(event) {
+            event = event ? event : window.event;
+            el._event.emit(ev,event);
+        }
+
+        addEventListener(el, ev, on);
+
+        return el._event;
+    }
+
+    function removeEvent(el,ev,fn){
+        if(el._event) {
+            el._event.off(ev,fn);
+            if(!el._event.hasListeners(ev))
+                removeEventListener(el, ev);
+        }
+
+        return this; 
+    }
 
     function addEventListener(elm, eType, fn){
         if(elm.addEventListener){
@@ -61,8 +60,7 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
         }
     }   
 
-    /* FIXME: normalize the cached path */
-    function loadScript(file,timeout) {
+    function Script(file,timeout) {
         var loaded = cached[file];
 
         if(loaded) return loaded;
@@ -90,7 +88,6 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
         }
 
         if(script.readyState) {
-            /* IE & Opera */
             script.onreadystatechange = function(event) {
                 /* FIXME: IE on 404 error hell */
                 if(this.readyState === "loaded" || 
@@ -180,34 +177,29 @@ try{root = global} catch(e){try {root = window} catch(e){root = this}};
     
 
     // opens Pandoras box
-    Pandora.on(window,'load')
-        .then(function(event) {
-            if(window.onready) { 
-                window.onready.call(event,Pandora);
-            } else {
-                var main, script = document.getElementsByTagName('script');
+    Pandora.on(window,'load',function(event) {
+        if(window.onready) { 
+            window.onready.call(event,Pandora);
+        } else {
+            var main, script = document.getElementsByTagName('script');
 
-                for(var i = 0; i < script.length; i++) {
-                    if((main = script[i].getAttribute('data-main'))){
-                        Pandora.open(main,OPEN_TIMEOUT).then(function(){
-                            console.log("Loaded", main);
-                        },function(error){
-                            console.log("Error loading %s:", main, error);
-                            /* TODO: handle errors */
-                        });
+            for(var i = 0; i < script.length; i++) {
+                if((main = script[i].getAttribute('data-main'))) {
+                    Pandora.open(main,OPEN_TIMEOUT).then(function() {
+                        console.log("Loaded", main);
+                    },function(error){
+                        throw error;
+                    });
 
-                        var base = main.split('/');
-                        Pandora.main = base.pop();
-                        Pandora.base = base.join('/');
+                    var base = main.split('/');
+                    Pandora.main = base.pop();
+                    Pandora.base = base.join('/');
 
-                        break;
-                    }
+                    break;
                 }
             }
-            this.emit('ready',event);
-        },function(error){
-            this.emit('error',error);
-        });
+        }
+    });
 
     /* FIXME: should not be necessary. */
     /* Instead pass Pandora to main(). */
